@@ -31,6 +31,29 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    const AllTutorialCollection = client
+      .db("All_Tutorial")
+      .collection("Tutorial");
+
+    // Get All Element
+    app.get("/alltutorial", async (req, res) => {
+      const cursor = AllTutorialCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    // Get Single Element
+    app.get("/", async (req, res) => {});
+
+    // Post Client Site to Database
+    app.post("/alltutorial", async (req, res) => {
+      const tutorial = req.body;
+      const result = await AllTutorialCollection.insertOne(tutorial);
+      res.send(result);
+    });
+
+    // Delete for Database
+    app.delete("/", async (req, res) => {});
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
