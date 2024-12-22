@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -37,12 +37,24 @@ async function run() {
 
     // Get All Element
     app.get("/alltutorial", async (req, res) => {
-      const cursor = AllTutorialCollection.find();
+      // Tutorial data added by email candidate
+      const email = req.query.email;
+      let query = {};
+      if (email) {
+        query = { email: email };
+      }
+      const cursor = AllTutorialCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
-    // Get Single Element
-    app.get("/", async (req, res) => {});
+
+    // Get Single Tutorial
+    app.get("/alltutorial/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await AllTutorialCollection.findOne(query);
+      res.send(result);
+    });
 
     // Post Client Site to Database
     app.post("/alltutorial", async (req, res) => {
@@ -51,8 +63,13 @@ async function run() {
       res.send(result);
     });
 
-    // Delete for Database
-    app.delete("/", async (req, res) => {});
+    // Delete Tutorial for Database
+    app.delete("/alltutorial/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await AllTutorialCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
