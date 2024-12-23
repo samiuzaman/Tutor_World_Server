@@ -34,6 +34,7 @@ async function run() {
     const AllTutorialCollection = client
       .db("All_Tutorial")
       .collection("Tutorial");
+    const AllBookedCollection = client.db("All_Tutorial").collection("Booked");
 
     // Get All Element
     app.get("/alltutorial", async (req, res) => {
@@ -63,11 +64,40 @@ async function run() {
       res.send(result);
     });
 
+    // Patch Tutorial data
+    app.patch("/alltutorial/:id", async (req, res) => {
+      const id = req.params.id;
+      const body = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          language: body.language,
+          price: body.price,
+          description: body.description,
+          image: body.image,
+        },
+      };
+      const result = await AllTutorialCollection.updateMany(filter, updatedDoc);
+      res.send(result);
+    });
+
     // Delete Tutorial for Database
     app.delete("/alltutorial/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await AllTutorialCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // My Booked Collection
+    app.get("/mybooked", async (req, res) => {
+      const myBooked = await AllBookedCollection.find().toArray();
+      res.send(myBooked);
+    });
+
+    app.post("/mybooked", async (req, res) => {
+      const booked = req.body;
+      const result = await AllBookedCollection.insertOne(booked);
       res.send(result);
     });
 
