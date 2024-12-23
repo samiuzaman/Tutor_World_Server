@@ -35,19 +35,28 @@ async function run() {
       .db("All_Tutorial")
       .collection("Tutorial");
     const AllBookedCollection = client.db("All_Tutorial").collection("Booked");
+    const AllCategoryCollection = client
+      .db("All_Tutorial")
+      .collection("Category");
 
     // Get All Element
     app.get("/alltutorial", async (req, res) => {
+      let query = {};
       // Tutorial data added by email candidate
       const email = req.query.email;
-      let query = {};
       if (email) {
         query = { email: email };
+      }
+      const category = req.query.language;
+      if (category) {
+        query = { language: category };
       }
       const cursor = AllTutorialCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
+
+    
 
     // Get Single Tutorial
     app.get("/alltutorial/:id", async (req, res) => {
@@ -99,6 +108,12 @@ async function run() {
       const booked = req.body;
       const result = await AllBookedCollection.insertOne(booked);
       res.send(result);
+    });
+
+    // Get Category
+    app.get("/category", async (req, res) => {
+      const category = await AllCategoryCollection.find().toArray();
+      res.send(category);
     });
 
     // Send a ping to confirm a successful connection
