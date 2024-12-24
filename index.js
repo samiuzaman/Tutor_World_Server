@@ -8,8 +8,8 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://sports-equify.netlify.app"],
-    credentials: false,
+    origin: ["http://localhost:5173", "https://tutor-world.netlify.app"],
+    credentials: true,
   })
 );
 app.use(express.json());
@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const AllTutorialCollection = client
       .db("All_Tutorial")
@@ -126,29 +126,6 @@ async function run() {
       res.send(updateReview);
     });
 
-    // app.put("/mybooked/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   console.log(req.params);
-    //   const result = await AllTutorialCollection.updateOne(
-    //     { tutor_id: id },
-    //     { $inc: { review: 1 } }
-    //   );
-    //   res.send(result);
-    // });
-
-    // app.put("/alltutorial/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id) };
-    //   console.log(req.body);
-    //   const updatedDoc = {
-    //     $set: {
-    //       review: req.params.review,
-    //     },
-    //   };
-    //   const result = await AllTutorialCollection.updateOne(filter, updatedDoc);
-    //   res.send(result);
-    // });
-
     // My Booked Collection
     app.get("/mybooked", async (req, res) => {
       const email = req.query.email;
@@ -173,7 +150,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
