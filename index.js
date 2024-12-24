@@ -56,8 +56,6 @@ async function run() {
       res.send(result);
     });
 
-    
-
     // Get Single Tutorial
     app.get("/alltutorial/:id", async (req, res) => {
       const id = req.params.id;
@@ -98,9 +96,60 @@ async function run() {
       res.send(result);
     });
 
+    // Update Review Value
+    app.put("/mybooked/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const tutorial = await AllTutorialCollection.findOne(query);
+      let count = tutorial.review;
+      if (tutorial.review) {
+        count = Number(tutorial.review) + 1;
+      }
+      console.log(tutorial);
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          review: count,
+        },
+      };
+      const updateReview = await AllTutorialCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(updateReview);
+    });
+
+    // app.put("/mybooked/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   console.log(req.params);
+    //   const result = await AllTutorialCollection.updateOne(
+    //     { tutor_id: id },
+    //     { $inc: { review: 1 } }
+    //   );
+    //   res.send(result);
+    // });
+
+    // app.put("/alltutorial/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id) };
+    //   console.log(req.body);
+    //   const updatedDoc = {
+    //     $set: {
+    //       review: req.params.review,
+    //     },
+    //   };
+    //   const result = await AllTutorialCollection.updateOne(filter, updatedDoc);
+    //   res.send(result);
+    // });
+
     // My Booked Collection
     app.get("/mybooked", async (req, res) => {
-      const myBooked = await AllBookedCollection.find().toArray();
+      const email = req.query.email;
+      let query = {};
+      if (email) {
+        query = { bookers_email: email };
+      }
+      const myBooked = await AllBookedCollection.find(query).toArray();
       res.send(myBooked);
     });
 
