@@ -47,10 +47,17 @@ async function run() {
       if (email) {
         query = { email: email };
       }
+      // Category Data
       const category = req.query.language;
       if (category) {
         query = { language: category };
       }
+      // Searcing Data
+      const { search } = req.query;
+      if (search) {
+        query = { language: { $regex: search, $options: "i" } };
+      }
+
       const cursor = AllTutorialCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
