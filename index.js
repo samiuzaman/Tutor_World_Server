@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -13,6 +15,23 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
+
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  console.log("Token: ", token);
+  if (!token) {
+    return res.status(401).send({ message: "unAuthorized access" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.tkh8w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 console.log(uri);
@@ -38,6 +57,29 @@ async function run() {
     const AllCategoryCollection = client
       .db("All_Tutorial")
       .collection("Category");
+
+    // Auth Related API
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.JWT_SECRET, {
+        expiresIn: "30d",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
+    app.get("/logout", async (req, res) => {
+      res.clearCookie("token", {
+        maxAge: 0,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      });
+    });
 
     // Get All Element
     app.get("/alltutorial", async (req, res) => {
@@ -72,14 +114,14 @@ async function run() {
     });
 
     // Post Client Site to Database
-    app.post("/alltutorial", async (req, res) => {
+    app.post("/alltutorial", verifyToken, async (req, res) => {
       const tutorial = req.body;
       const result = await AllTutorialCollection.insertOne(tutorial);
       res.send(result);
     });
 
     // Patch Tutorial data
-    app.patch("/alltutorial/:id", async (req, res) => {
+    app.patch("/alltutorial/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const body = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -96,7 +138,7 @@ async function run() {
     });
 
     // Delete Tutorial for Database
-    app.delete("/alltutorial/:id", async (req, res) => {
+    app.delete("/alltutorial/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await AllTutorialCollection.deleteOne(query);
@@ -127,7 +169,7 @@ async function run() {
     });
 
     // My Booked Collection
-    app.get("/mybooked", async (req, res) => {
+    app.get("/mybooked", verifyToken, async (req, res) => {
       const email = req.query.email;
       let query = {};
       if (email) {
@@ -137,8 +179,20 @@ async function run() {
       res.send(myBooked);
     });
 
-    app.post("/mybooked", async (req, res) => {
+    app.post("/mybooked", verifyToken, async (req, res) => {
       const booked = req.body;
+
+      // if a user placed a booked already in this tutor
+      const query = {
+        tutor_id: booked?.tutor_id,
+        tutor_email: booked?.tutor_email,
+        bookers_email: booked?.bookers_email,
+      };
+      const alreadyExist = await AllBookedCollection.findOne(query);
+      if (alreadyExist) {
+        return res.status(400).send("You have already booked in tutor");
+      }
+
       const result = await AllBookedCollection.insertOne(booked);
       res.send(result);
     });
