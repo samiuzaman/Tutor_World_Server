@@ -19,7 +19,6 @@ app.use(cookieParser());
 
 const verifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
-  console.log("Token: ", token);
   if (!token) {
     return res.status(401).send({ message: "unAuthorized access" });
   }
@@ -70,25 +69,23 @@ async function run() {
           secure: process.env.NODE_ENV === "production",
           sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
-        .send({ success: true });
+        .send({ Login: true });
     });
 
     app.get("/logout", async (req, res) => {
-      res.clearCookie("token", {
-        maxAge: 0,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      });
+      res
+        .clearCookie("token", {
+          maxAge: 0,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ Logout: true });
     });
 
     // Get All Element
     app.get("/alltutorial", async (req, res) => {
       let query = {};
-      // Tutorial data added by email candidate
-      const email = req.query.email;
-      if (email) {
-        query = { email: email };
-      }
+
       // Category Data
       const category = req.query.language;
       if (category) {
@@ -105,6 +102,17 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/my-added-tutorial", verifyToken, async (req, res) => {
+      const decodedEmail = req.user?.email;
+      const email = req.query?.email;
+      if (decodedEmail !== email) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      let query = { email: email };
+      const tutorial = await AllTutorialCollection.find(query).toArray();
+      res.send(tutorial);
+    });
+
     // Get Single Tutorial
     app.get("/alltutorial/:id", async (req, res) => {
       const id = req.params.id;
@@ -114,14 +122,14 @@ async function run() {
     });
 
     // Post Client Site to Database
-    app.post("/alltutorial", verifyToken, async (req, res) => {
+    app.post("/alltutorial", async (req, res) => {
       const tutorial = req.body;
       const result = await AllTutorialCollection.insertOne(tutorial);
       res.send(result);
     });
 
     // Patch Tutorial data
-    app.patch("/alltutorial/:id", verifyToken, async (req, res) => {
+    app.patch("/alltutorial/:id", async (req, res) => {
       const id = req.params.id;
       const body = req.body;
       const filter = { _id: new ObjectId(id) };
@@ -138,7 +146,7 @@ async function run() {
     });
 
     // Delete Tutorial for Database
-    app.delete("/alltutorial/:id", verifyToken, async (req, res) => {
+    app.delete("/alltutorial/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await AllTutorialCollection.deleteOne(query);
@@ -154,7 +162,6 @@ async function run() {
       if (tutorial.review) {
         count = Number(tutorial.review) + 1;
       }
-      console.log(tutorial);
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
         $set: {
@@ -170,7 +177,11 @@ async function run() {
 
     // My Booked Collection
     app.get("/mybooked", verifyToken, async (req, res) => {
+      const decodedEmail = req.user?.email;
       const email = req.query.email;
+      if (decodedEmail !== email) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
       let query = {};
       if (email) {
         query = { bookers_email: email };
@@ -179,7 +190,7 @@ async function run() {
       res.send(myBooked);
     });
 
-    app.post("/mybooked", verifyToken, async (req, res) => {
+    app.post("/mybooked", async (req, res) => {
       const booked = req.body;
 
       // if a user placed a booked already in this tutor
